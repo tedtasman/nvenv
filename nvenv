@@ -1,6 +1,28 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+
+# -----------------------------
+# Utility: Detect sourcing
+# -----------------------------
+
+is_sourced() {
+  if [ -n "${BASH_VERSION:-}" ]; then
+    [[ "${BASH_SOURCE[0]}" != "$0" ]]
+    return
+  fi
+
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    [[ "${(%):-%N}" != "$0" ]]
+    return
+  fi
+
+  return 1
+}
+
+# Enable strict mode only when executed, not sourced
+if ! is_sourced; then
+  set -euo pipefail
+fi
 
 NAME="venv"
 UPDATE=false
@@ -15,10 +37,6 @@ echo ""
 # -----------------------------
 # Utility Functions
 # -----------------------------
-
-is_sourced() {
-  [[ "${BASH_SOURCE[0]}" != "${0}" ]]
-}
 
 safe_exit() {
   echo ""
