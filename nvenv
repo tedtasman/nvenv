@@ -1,28 +1,20 @@
 #!/usr/bin/env bash
 
-
 # -----------------------------
-# Utility: Detect sourcing
+# Detect if sourced
 # -----------------------------
 
 is_sourced() {
-  if [ -n "${BASH_VERSION:-}" ]; then
+  if [[ -n "${ZSH_VERSION:-}" ]]; then
+    # In zsh, when sourced, ZSH_EVAL_CONTEXT is not "toplevel"
+    [[ "${ZSH_EVAL_CONTEXT}" != "toplevel" ]]
+  elif [[ -n "${BASH_VERSION:-}" ]]; then
+    # In bash, check if BASH_SOURCE differs from the script name
     [[ "${BASH_SOURCE[0]}" != "$0" ]]
-    return
+  else
+    return 1
   fi
-
-  if [ -n "${ZSH_VERSION:-}" ]; then
-    [[ "${(%):-%N}" != "$0" ]]
-    return
-  fi
-
-  return 1
 }
-
-# Enable strict mode only when executed, not sourced
-if ! is_sourced; then
-  set -euo pipefail
-fi
 
 NAME="venv"
 UPDATE=false
@@ -124,7 +116,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-set -- "${POSITIONAL_ARGS[@]+"${POSITIONAL_ARGS[@]}"}"
+set -- "${POSITIONAL_ARGS[@]}"
 
 # -----------------------------
 # Create Virtual Environment

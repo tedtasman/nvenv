@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-
-set -euo pipefail
-
 INSTALL_DIR="$HOME/.local/bin"
 SCRIPT_NAME="nvenv"
 REPO_URL="https://raw.githubusercontent.com/tedtasman/nvenv/main/nvenv"
