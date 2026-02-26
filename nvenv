@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+NAME="venv"
+UPDATE=false
+ACTIVATE=true
+CREATED=false
+ACTIVATED=false
+
+POSITIONAL_ARGS=()
+
+echo ""
+
+# -----------------------------
+# Utility Functions
+# -----------------------------
+
+is_sourced() {
+  [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+}
+
+safe_exit() {
+  echo ""
+  local code=${1:-1}
+  if is_sourced; then
+    return "$code"
+  else
+    exit "$code"
+  fi
+}
+
+print_error() {
+  echo -e "\033[1;31m$1\033[0m"
+}
+
+print_warning() {
+  echo -e "\033[1;33m$1\033[0m"
+}
+
+print_help() {
+  cat <<EOF
+Usage: source nvenv [options]
+
+Options:
+  -n, --name NAME         Virtual environment name (default: venv)
+  -u, --update            Upgrade pip in the environment
+  -d, --dont-activate     Do not activate after creation
+  -h, --help              Show this help message
+
+Examples:
+  source nvenv
+  source nvenv -n .venv
+  source nvenv --update
+  source nvenv -n env --dont-activate
+EOF
+}
+
+# -----------------------------
+# Detect Python
+# -----------------------------
+
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+else
+  print_error "Python not found in PATH"
+  safe_exit 1
+fi
+
+# -----------------------------
+# Argument Parsing
+# -----------------------------
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -n|--name)
+      if [[ -z "${2:-}" ]]; then
+        print_error "--name requires a value"
+        safe_exit 1
+      fi
+      NAME="$2"
+      shift 2
+      ;;
+    -u|--update)
+      UPDATE=true
+      shift
+      ;;
+    -d|--dont-activate)
+      ACTIVATE=false
+      shift
+      ;;
+    -h|--help)
+      print_help
+      safe_exit 0
+      ;;
+    -*)
+      print_error "Unknown option $1"
+      safe_exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]+"${POSITIONAL_ARGS[@]}"}"
+
+# -----------------------------
+# Create Virtual Environment
+# -----------------------------
+
+if [[ ! -d "$NAME" ]]; then
+  "$PYTHON_BIN" -m venv "$NAME"
+  CREATED=true
+
+elif [[ "$UPDATE" == false && "$ACTIVATE" == false ]]; then
+  print_error "Virtual environment '$NAME' already exists"
+  safe_exit 1
+fi
+
+# -----------------------------
+# Update pip if requested
+# -----------------------------
+
+if [[ "$UPDATE" == true ]]; then
+  "$NAME/bin/python" -m pip install --upgrade pip
+  echo ""
+fi
+
+# -----------------------------
+# Activate if requested
+# -----------------------------
+
+if [[ "$ACTIVATE" == true ]]; then
+  if is_sourced; then
+    # shellcheck disable=SC1090
+    source "$NAME/bin/activate"
+    ACTIVATED=true
+  fi
+fi
+
+# -----------------------------
+# Output Status
+# -----------------------------
+
+if [[ "$ACTIVATED" == true ]]; then
+  echo "Virtual environment '$NAME' activated"
+else
+  if [[ "$CREATED" == true ]]; then
+    echo "Virtual environment '$NAME' created"
+  elif [[ "$UPDATE" == true ]]; then
+    echo "Virtual environment '$NAME' updated"
+  fi
+
+  if [[ "$ACTIVATE" == true ]]; then
+    print_warning "Run with: source ./nvenv to activate"
+  fi
+fi
+
+echo ""
