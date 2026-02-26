@@ -21,6 +21,7 @@ UPDATE=true
 ACTIVATE=true
 CREATED=false
 ACTIVATED=false
+REQUIREMENTS=false
 
 POSITIONAL_ARGS=()
 
@@ -101,6 +102,10 @@ while [[ $# -gt 0 ]]; do
       ACTIVATE=false
       shift
       ;;
+    -r|--requirements)
+      REQUIREMENTS=true
+      shift
+      ;;
     -h|--help)
       print_help
       safe_exit 0
@@ -136,7 +141,18 @@ fi
 # -----------------------------
 
 if [[ "$UPDATE" == true ]]; then
+  echo "Updating pip..."
   "$NAME/bin/python" -m pip install --upgrade pip
+  echo ""
+fi
+
+# -----------------------------
+# Install requirements if requested
+# -----------------------------
+
+if [[ "$REQUIREMENTS" == true && -f "requirements.txt" ]]; then
+  echo "Installing requirements..."
+  "$NAME/bin/pip" install -r requirements.txt
   echo ""
 fi
 
@@ -156,9 +172,7 @@ fi
 # Output Status
 # -----------------------------
 
-if [[ "$ACTIVATED" == true ]]; then
-  echo "Virtual environment '$NAME' activated"
-else
+if [[ "$ACTIVATED" != true ]]; then
   if [[ "$CREATED" == true ]]; then
     echo "Virtual environment '$NAME' created"
   elif [[ "$UPDATE" == true ]]; then
