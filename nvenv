@@ -17,7 +17,7 @@ is_sourced() {
 }
 
 NAME="venv"
-UPDATE=false
+UPDATE=true
 ACTIVATE=true
 CREATED=false
 ACTIVATED=false
@@ -93,8 +93,8 @@ while [[ $# -gt 0 ]]; do
       NAME="$2"
       shift 2
       ;;
-    -u|--update)
-      UPDATE=true
+    -s|--skip-update)
+      UPDATE=false
       shift
       ;;
     -d|--dont-activate)
