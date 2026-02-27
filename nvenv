@@ -23,9 +23,9 @@ CREATED=false
 ACTIVATED=false
 REQUIREMENTS=false
 DELETE=false
-SYSTEM_SITE_PACKAGES=""
 
 POSITIONAL_ARGS=()
+VENV_FLAGS=()
 
 # -----------------------------
 # Utility Functions
@@ -50,7 +50,7 @@ print_warning() {
 
 print_help() {
   cat <<EOF
-Usage: source nvenv [options]
+Usage: source nvenv [options] [-- venv-flags]
 
 Options:
   -n, --name NAME         Virtual environment name (default: venv)
@@ -58,14 +58,18 @@ Options:
   -s, --skip-activate     Do not activate after creation
   -r, --requirements      Install ./requirements.txt in the virtual environment
   -d, --delete            Delete the virtual environment with name NAME
-  --system-site-packages  Install system site packages (passthrough to venv creator)
   -h, --help              Show this help message
+
+Venv flags (passed to python -m venv):
+  Any flags after -a or --args are passed directly to python -m venv
 
 Examples:
   source nvenv
   source nvenv -n .venv
   source nvenv --update
-  source nvenv -n env --dont-activate
+  source nvenv -n env -s
+  source nvenv -- --system-site-packages
+  source nvenv -n .venv -- --system-site-packages
 EOF
 }
 
@@ -136,17 +140,19 @@ while [[ $# -gt 0 ]]; do
       DELETE=true
       shift
       ;;
-    --system-site-packages)
-      SYSTEM_SITE_PACKAGES="--system-site-packages"
-      shift
-      ;;
     -h|--help)
       print_help
       safe_exit 0
       ;;
+    -a|--args)
+      shift
+      VENV_FLAGS+=("$@")
+      break
+      ;;
     -*)
-      print_error "Unknown option $1"
-      safe_exit 1
+      # Pass through unknown flags to venv
+      VENV_FLAGS+=("$1")
+      shift
       ;;
     *)
       POSITIONAL_ARGS+=("$1")
@@ -164,7 +170,7 @@ set -- "${POSITIONAL_ARGS[@]}"
 if [[ $DELETE == true ]]; then
   if [[ -d "$NAME" ]]; then
     if prompt_yes "Delete virtual environment '$NAME'?"; then
-      rm -rf "$NAME"
+      rm -rf "$NAME"/
       echo "'$NAME' deleted"
     else
       echo "Not deleting '$NAME'"
@@ -178,7 +184,7 @@ fi
 # -----------------------------
 
 if [[ ! -d "$NAME" ]]; then
-  "$PYTHON_BIN" -m venv "$NAME" "$SYSTEM_SITE_PACKAGES"
+  "$PYTHON_BIN" -m venv "${VENV_FLAGS[@]}" "$NAME"
   CREATED=true
   echo "Virtual environment '$NAME' created"
 
