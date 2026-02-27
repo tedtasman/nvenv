@@ -23,6 +23,7 @@ CREATED=false
 ACTIVATED=false
 REQUIREMENTS=false
 DELETE=false
+EXIT=-1
 
 POSITIONAL_ARGS=()
 VENV_FLAGS=()
@@ -30,15 +31,6 @@ VENV_FLAGS=()
 # -----------------------------
 # Utility Functions
 # -----------------------------
-
-safe_exit() {
-  local code=${1:-1}
-  if is_sourced; then
-    return "$code"
-  else
-    exit "$code"
-  fi
-}
 
 print_error() {
   echo -e "\033[1;31m$1\033[0m"
@@ -107,19 +99,19 @@ elif command -v python >/dev/null 2>&1; then
   PYTHON_BIN="python"
 else
   print_error "Python not found in PATH"
-  safe_exit 1
+  EXIT=0
 fi
 
 # -----------------------------
 # Argument Parsing
 # -----------------------------
 
-while [[ $# -gt 0 ]]; do
+while [[ $# -gt 0 && $EXIT == -1 ]]; do
   case "$1" in
     -n|--name)
       if [[ -z "${2:-}" ]]; then
         print_error "--name requires a value"
-        safe_exit 1
+        EXIT=1
       fi
       NAME="$2"
       shift 2
@@ -142,7 +134,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     -h|--help)
       print_help
-      safe_exit 0
+      EXIT=0
       ;;
     -a|--args)
       shift
@@ -167,7 +159,7 @@ set -- "${POSITIONAL_ARGS[@]}"
 # Removal
 # -----------------------------
 
-if [[ $DELETE == true ]]; then
+if [[ $DELETE == true && $EXIT == -1 ]]; then
   if [[ -d "$NAME" ]]; then
     if prompt_yes "Delete virtual environment '$NAME'?"; then
       rm -rf "$NAME"/
@@ -176,28 +168,28 @@ if [[ $DELETE == true ]]; then
       echo "Not deleting '$NAME'"
     fi
   fi
-  safe_exit 1
+  EXIT=1
 fi
 
 # -----------------------------
 # Create Virtual Environment
 # -----------------------------
 
-if [[ ! -d "$NAME" ]]; then
+if [[ ! -d "$NAME" && $EXIT == -1 ]]; then
   "$PYTHON_BIN" -m venv "${VENV_FLAGS[@]}" "$NAME"
   CREATED=true
   echo "Virtual environment '$NAME' created"
 
-elif [[ "$UPDATE" == false && "$ACTIVATE" == false ]]; then
+elif [[ "$UPDATE" == false && "$ACTIVATE" == false && EXIT == -1 ]]; then
   print_error "Virtual environment '$NAME' already exists"
-  safe_exit 1
+  EXIT=1
 fi
 
 # -----------------------------
 # Update pip if requested
 # -----------------------------
 
-if [[ "$UPDATE" == true ]]; then
+if [[ "$UPDATE" == true && EXIT == -1 ]]; then
   echo ""
   echo "Updating pip..."
   "$NAME/bin/python" -m pip install --upgrade pip
@@ -209,7 +201,7 @@ fi
 # Install requirements if requested
 # -----------------------------
 
-if [[ "$REQUIREMENTS" == true && -f "requirements.txt" ]]; then
+if [[ "$REQUIREMENTS" == true && -f "requirements.txt" && EXIT == -1 ]]; then
   echo "Installing requirements..."
   "$NAME/bin/pip" install -r requirements.txt
   echo "Installed requirements"
@@ -220,7 +212,7 @@ fi
 # Activate if requested
 # -----------------------------
 
-if [[ "$ACTIVATE" == true ]]; then
+if [[ "$ACTIVATE" == true && EXIT == -1 ]]; then
   if is_sourced; then
     # shellcheck disable=SC1090
     source "$NAME/bin/activate"
@@ -228,4 +220,8 @@ if [[ "$ACTIVATE" == true ]]; then
   else
     print_warning "Run with: source ./nvenv to activate"
   fi
+fi
+
+if [[ is_sourced == 0 ]]; then
+  exit $EXIT
 fi
