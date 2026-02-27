@@ -17,22 +17,20 @@ is_sourced() {
 }
 
 NAME="venv"
-UPDATE=true
+UPDATE=false
 ACTIVATE=true
 CREATED=false
 ACTIVATED=false
 REQUIREMENTS=false
+DELETE=false
 
 POSITIONAL_ARGS=()
-
-echo ""
 
 # -----------------------------
 # Utility Functions
 # -----------------------------
 
 safe_exit() {
-  echo ""
   local code=${1:-1}
   if is_sourced; then
     return "$code"
@@ -55,8 +53,10 @@ Usage: source nvenv [options]
 
 Options:
   -n, --name NAME         Virtual environment name (default: venv)
-  -u, --update            Upgrade pip in the environment
-  -d, --dont-activate     Do not activate after creation
+  -u, --upgrade           Upgrade pip in the environment
+  -s, --skip-activate     Do not activate after creation
+  -r, --requirements      Install ./requirements.txt in the virtual environment
+  -d, --delete            Delete the virtual environment with name NAME
   -h, --help              Show this help message
 
 Examples:
@@ -65,6 +65,26 @@ Examples:
   source nvenv --update
   source nvenv -n env --dont-activate
 EOF
+}
+
+prompt_yes() {
+  local message="$1"
+  local response
+
+  if [[ "$INTERACTIVE" == false ]]; then
+    return 0
+  fi
+
+  read -r -p "$message [y/N] " response </dev/tty
+
+  case "$response" in
+    [yY]|[yY][eE][sS])
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 # -----------------------------
@@ -94,16 +114,20 @@ while [[ $# -gt 0 ]]; do
       NAME="$2"
       shift 2
       ;;
-    -s|--skip-update)
-      UPDATE=false
+    -u|--upgrade)
+      UPDATE=true
       shift
       ;;
-    -d|--dont-activate)
+    -s|--skip-activate)
       ACTIVATE=false
       shift
       ;;
     -r|--requirements)
       REQUIREMENTS=true
+      shift
+      ;;
+    -d|--delete)
+      DELETE=true
       shift
       ;;
     -h|--help)
@@ -124,12 +148,29 @@ done
 set -- "${POSITIONAL_ARGS[@]}"
 
 # -----------------------------
+# Removal
+# -----------------------------
+
+if [[ $DELETE == true ]]; then
+  if [[ -d "$NAME" ]]; then
+    if prompt_yes "Delete virtual environment '$NAME'?"; then
+      rm -rf "$NAME"
+      echo "'$NAME' deleted"
+    else
+      echo "Not deleting '$NAME'"
+    fi
+  fi
+  safe_exit 0
+fi
+
+# -----------------------------
 # Create Virtual Environment
 # -----------------------------
 
 if [[ ! -d "$NAME" ]]; then
   "$PYTHON_BIN" -m venv "$NAME"
   CREATED=true
+  echo "Virtual environment '$NAME' created"
 
 elif [[ "$UPDATE" == false && "$ACTIVATE" == false ]]; then
   print_error "Virtual environment '$NAME' already exists"
@@ -141,8 +182,10 @@ fi
 # -----------------------------
 
 if [[ "$UPDATE" == true ]]; then
+  echo ""
   echo "Updating pip..."
   "$NAME/bin/python" -m pip install --upgrade pip
+  echo "Virtual environment '$NAME' updated"
   echo ""
 fi
 
@@ -153,6 +196,7 @@ fi
 if [[ "$REQUIREMENTS" == true && -f "requirements.txt" ]]; then
   echo "Installing requirements..."
   "$NAME/bin/pip" install -r requirements.txt
+  echo "Installed requirements"
   echo ""
 fi
 
@@ -165,23 +209,7 @@ if [[ "$ACTIVATE" == true ]]; then
     # shellcheck disable=SC1090
     source "$NAME/bin/activate"
     ACTIVATED=true
-  fi
-fi
-
-# -----------------------------
-# Output Status
-# -----------------------------
-
-if [[ "$ACTIVATED" != true ]]; then
-  if [[ "$CREATED" == true ]]; then
-    echo "Virtual environment '$NAME' created"
-  elif [[ "$UPDATE" == true ]]; then
-    echo "Virtual environment '$NAME' updated"
-  fi
-
-  if [[ "$ACTIVATE" == true ]]; then
+  else
     print_warning "Run with: source ./nvenv to activate"
   fi
 fi
-
-echo ""
