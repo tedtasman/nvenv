@@ -166,7 +166,7 @@ if [[ $DELETE == true ]]; then
       echo "Not deleting '$NAME'"
     fi
   fi
-  safe_exit 0
+  safe_exit 1
 fi
 
 # -----------------------------
