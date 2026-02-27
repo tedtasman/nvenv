@@ -189,7 +189,7 @@ fi
 # Update pip if requested
 # -----------------------------
 
-if [[ "$UPDATE" == true && EXIT == -1 ]]; then
+if [[ "$UPDATE" == true && $EXIT == -1 ]]; then
   echo ""
   echo "Updating pip..."
   "$NAME/bin/python" -m pip install --upgrade pip
@@ -212,7 +212,7 @@ fi
 # Activate if requested
 # -----------------------------
 
-if [[ "$ACTIVATE" == true && EXIT == -1 ]]; then
+if [[ "$ACTIVATE" == true && $EXIT == -1 ]]; then
   if is_sourced; then
     # shellcheck disable=SC1090
     source "$NAME/bin/activate"
