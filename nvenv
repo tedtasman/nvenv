@@ -201,7 +201,7 @@ fi
 # Install requirements if requested
 # -----------------------------
 
-if [[ "$REQUIREMENTS" == true && -f "requirements.txt" && EXIT == -1 ]]; then
+if [[ "$REQUIREMENTS" == true && -f "requirements.txt" && $EXIT == -1 ]]; then
   echo "Installing requirements..."
   "$NAME/bin/pip" install -r requirements.txt
   echo "Installed requirements"
