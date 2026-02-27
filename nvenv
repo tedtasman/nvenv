@@ -23,6 +23,7 @@ CREATED=false
 ACTIVATED=false
 REQUIREMENTS=false
 DELETE=false
+SYSTEM_SITE_PACKAGES=""
 
 POSITIONAL_ARGS=()
 
@@ -57,6 +58,7 @@ Options:
   -s, --skip-activate     Do not activate after creation
   -r, --requirements      Install ./requirements.txt in the virtual environment
   -d, --delete            Delete the virtual environment with name NAME
+  --system-site-packages  Install system site packages (passthrough to venv creator)
   -h, --help              Show this help message
 
 Examples:
@@ -130,6 +132,10 @@ while [[ $# -gt 0 ]]; do
       DELETE=true
       shift
       ;;
+    --system-site-packages)
+      SYSTEM_SITE_PACKAGES="--system-site-packages"
+      shift
+      ;;
     -h|--help)
       print_help
       safe_exit 0
@@ -168,7 +174,7 @@ fi
 # -----------------------------
 
 if [[ ! -d "$NAME" ]]; then
-  "$PYTHON_BIN" -m venv "$NAME"
+  "$PYTHON_BIN" -m venv "$NAME" "$SYSTEM_SITE_PACKAGES"
   CREATED=true
   echo "Virtual environment '$NAME' created"
 
