@@ -180,7 +180,7 @@ if [[ ! -d "$NAME" && $EXIT == -1 ]]; then
   CREATED=true
   echo "Virtual environment '$NAME' created"
 
-elif [[ "$UPDATE" == false && "$ACTIVATE" == false && EXIT == -1 ]]; then
+elif [[ "$UPDATE" == false && "$ACTIVATE" == false && $EXIT == -1 ]]; then
   print_error "Virtual environment '$NAME' already exists"
   EXIT=1
 fi
