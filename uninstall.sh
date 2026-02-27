@@ -61,7 +61,6 @@ fi
 
 if [[ -f "$SHELL_RC" ]]; then
   if grep -q "nvenv() {" "$SHELL_RC" 2>/dev/null; then
-    # Create a temporary file without the nvenv function and related comments
     {
       grep -v "nvenv shell wrapper" "$SHELL_RC"
     } | {
@@ -72,7 +71,6 @@ if [[ -f "$SHELL_RC" ]]; then
       grep -v "^}$" -m1
     } > "$SHELL_RC.tmp"
     
-    # More precise removal using sed
     sed -i '' '/# nvenv shell wrapper/,/^}/d' "$SHELL_RC"
     echo "✔ Shell function removed from $SHELL_RC"
   fi
