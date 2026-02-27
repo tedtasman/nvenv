@@ -33,7 +33,12 @@ prompt_yes() {
   esac
 }
 
-echo ""
+if [[ -f "$INSTALL_DIR"/$SCRIPT_NAME ]];then
+  echo "Removing existing nvenv installation"
+  echo ""
+  rm -f "$INSTALL_DIR/$SCRIPT_NAME"
+fi
+
 echo "Installing nvenv..."
 echo ""
 
@@ -44,6 +49,7 @@ echo ""
 mkdir -p "$INSTALL_DIR"
 
 curl -fsSL "$REPO_URL" -o "$INSTALL_DIR/$SCRIPT_NAME"
+
 
 chmod +x "$INSTALL_DIR/$SCRIPT_NAME"
 
@@ -115,9 +121,7 @@ if prompt_yes "Make 'nvenv' callable without typing 'source'?"; then
   fi
 fi
 
-echo ""
 echo "Installation complete."
 echo ""
 echo "Restart your shell or run:"
 echo "  source \"$SHELL_RC\""
-echo ""
